@@ -1,0 +1,15 @@
+{
+  "files": {
+    "main.css": "/radiogame/static/css/main.e6c13ad2.css",
+    "main.js": "/radiogame/static/js/main.d3b56b22.js",
+    "static/js/453.07d85aea.chunk.js": "/radiogame/static/js/453.07d85aea.chunk.js",
+    "index.html": "/radiogame/index.html",
+    "main.e6c13ad2.css.map": "/radiogame/static/css/main.e6c13ad2.css.map",
+    "main.d3b56b22.js.map": "/radiogame/static/js/main.d3b56b22.js.map",
+    "453.07d85aea.chunk.js.map": "/radiogame/static/js/453.07d85aea.chunk.js.map"
+  },
+  "entrypoints": [
+    "static/css/main.e6c13ad2.css",
+    "static/js/main.d3b56b22.js"
+  ]
+}
