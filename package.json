@@ -1,7 +1,7 @@
 {
   "name": "radiology-game",
   "version": "0.1.0",
-  "homepage": "https://jonathantzh.github.io/radiogame",
+  "homepage": "https://jonathantzh.github.io/radiogame/#/",
   "private": true,
   "dependencies": {
     "@emotion/react": "^11.13.5",
