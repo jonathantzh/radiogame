@@ -128,25 +128,36 @@ const handleSubmit = async () => {
         selectBg.style.backgroundColor = "#FFCCCB";
     }
 
-    // update DB on new score
     let deltaScore = numCorrect-numWrong;
     if(deltaScore < 0) { deltaScore = 0; }
-    const newScore = userScore+deltaScore;
-    setUserScore(newScore);
 
+    // update DB on new score
     const db = getDatabase();
-    const userRef = ref(db, `users/${userId}`);
+    const scoreRef = ref(db, `users/${userId}/score`);
 
-    // Update the user's score in Firebase
-    update(userRef, { score: newScore })
-      .then(() => {
-        console.log("Your answers have been submitted, and your score has been updated!");
-        // setUserScore(newScore); // Update local score state
-      })
-      .catch((error) => {
-        console.error("Error updating score:", error);
-        console.log("There was an error updating your score. Please try again.");
-      });
+    onValue(scoreRef, (snapshot) => {
+        const firebaseScore = snapshot.val();
+        setUserScore(firebaseScore || 0); // Set score to 0 if not found
+
+        const newScore = userScore+deltaScore;
+        setUserScore(newScore);
+    
+        const db = getDatabase();
+        const userRef = ref(db, `users/${userId}`);
+    
+        // Update the user's score in Firebase
+        update(userRef, { score: newScore })
+            .then(() => {
+                console.log("Your answers have been submitted, and your score has been updated!");
+                // setUserScore(newScore); // Update local score state
+            })
+            .catch((error) => {
+                console.error("Error updating score:", error);
+                console.log("There was an error updating your score. Please try again.");
+            });
+    });
+
+    
 
       setSubmitted(true);
 };
