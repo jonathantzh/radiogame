@@ -22,24 +22,40 @@ import { AuthContext } from "../contexts/AuthContext"; // Adjust path as needed
 
 const QuizPage = () => {
 const [selectedAnswers, setSelectedAnswers] = useState([]);
-let [userProgress, setUserProgress] = useState(0);
-const [anchorEl, setAnchorEl] = useState();
+let [userProgress, setUserProgress] = useState(1);
 let [userScore, setUserScore] = useState(0);
 let [submitted, setSubmitted] = useState(false);
+let [imageLoaded, setImageLoaded] = useState(false);
+
+const [ csvIndex, setCsvIndex] = useState(["","00000001_000.png","Cardiomegaly"]);
+const [anchorEl, setAnchorEl] = useState();
 
 const { currentUser } = useContext(AuthContext); // Access the authenticated user
 const userId = currentUser?.uid; // Extract the user ID from the auth context
+const imagesBaseUrl = "https://radiogame.s3.ap-southeast-1.amazonaws.com/images/";
+
+const loadCsvIndex = async function(){
+    const response = await fetch( './Data_Entry_2017.csv' )
+    const responseText = await response.text();
+    let parseText = responseText.split('\n').slice(0,5000);
+    setCsvIndex( parseText );
+    setUserProgress(Math.round(Math.random()*parseText.length));
+    setImageLoaded(true);
+};
 
 // Fetch the user's score from Firebase when the page loads
 useEffect(() => {
+    loadCsvIndex();
+
     if (!userId) return; // Ensure userId is available
     const db = getDatabase();
     const scoreRef = ref(db, `users/${userId}/score`);
 
     onValue(scoreRef, (snapshot) => {
-    const firebaseScore = snapshot.val();
-    setUserScore(firebaseScore || 0); // Set score to 0 if not found
+        const firebaseScore = snapshot.val();
+        setUserScore(firebaseScore || 0); // Set score to 0 if not found
     });
+
 }, [userId])
 
 const handleClick = (event) => {
@@ -54,15 +70,6 @@ const open = Boolean(anchorEl);
 const id = open ? 'simple-popover' : undefined;
 
 const navigate = useNavigate();
-
-const questionList = [
-    "https://storage.googleapis.com/kagglesdsdata/datasets/5839/18613/images_001/images/00000001_000.png?X-Goog-Algorithm=GOOG4-RSA-SHA256&X-Goog-Credential=databundle-worker-v2%40kaggle-161607.iam.gserviceaccount.com%2F20241205%2Fauto%2Fstorage%2Fgoog4_request&X-Goog-Date=20241205T115850Z&X-Goog-Expires=345600&X-Goog-SignedHeaders=host&X-Goog-Signature=8d7e7c7bba10b08202ac51a15ae521963002a1d6861c4cd92620c657b1c5f519e0d47c379dea461fee8caa3e37a1766d7766006fae6df5e3e21c892f6193f27122be70ef40a78129bedcc267aa10c04556abd026831d7c9b55ed9afdcfa803f8f41c4717f00695ee90359222db8ff2f766f6d1cfa07c18edfdd8c756bd156b8f8bc2952f262de8d6640de29b1889cbe63243d9ab892a39c3bb70fe7a4bd1ef85f184d00ad85a61c5c7c72e8d49f5b102c2dff6a434202fdafe1c06988c3d4f499af4a260386c6f77d45c35424b510761a0ecb65db0e82bc4cca358422208ca60b019fa1fc6f2b26c2c57c0b10bf093fc663ddceb85ed8f7cf3eb20994f338c95"
-    ,"https://storage.googleapis.com/kagglesdsdata/datasets/5839/18613/images_001/images/00000001_001.png?X-Goog-Algorithm=GOOG4-RSA-SHA256&X-Goog-Credential=databundle-worker-v2%40kaggle-161607.iam.gserviceaccount.com%2F20241205%2Fauto%2Fstorage%2Fgoog4_request&X-Goog-Date=20241205T115850Z&X-Goog-Expires=345600&X-Goog-SignedHeaders=host&X-Goog-Signature=40be420588414e3ef7d5322052b8302e2b331da422773c966f8b071304af91528881a4727f2300c47c058084067d5581603dbe48f61867f09c6300d15f0bf674683f20e2a35153ae2cf71ac5578547d2c6563f0032f446465856de10677e21538a0b2046d877c4d6058e99effdb2f9032e515b73b872ac02dbc3ef149d1898cd47c053635909bd885962025475497347b9cceccf8f90a8b7e13e1f23b5fb9b46b88fa3748e99f4ed3d80e05bc43e872fea8c947a69f94697799bdd9df5bc2068290e0e0a8aaaaa3927ee8868d499d51b33a3442bd9f539a4ca13b78feb782606d9ff441128f229fdcda252109c210370c26529a7123b21ab927e2e1439ffe78f"
-];
-const answerList = [
-    "Cardiomegaly",
-    "Cardiomegaly|Emphysema"
-];
 
 const options = [
     "Atelectasis",
@@ -79,11 +86,8 @@ const options = [
     "Fibrosis",
     "Pleural Thickening",
     "Hernia",
+    "No Finding"
 ];
-
-const timeout = async (delay) => {
-    return new Promise( res => setTimeout(res, delay) );
-    }
 
 const handleOptionToggle = (option) => {
     setSelectedAnswers((prevSelected) =>
@@ -96,7 +100,7 @@ const handleOptionToggle = (option) => {
 
 const handleSubmit = async () => {
     const selectBg = document.getElementById("quiz-bg");
-    const actualAnswers = answerList[userProgress].split('|');
+    const actualAnswers = csvIndex[userProgress ? userProgress : 1].split(",")[1].split('|');
     let numCorrect = 0;
     let numWrong = 0;
 
@@ -170,11 +174,7 @@ const handleNext = () => {
     window.scrollTo(0, 0);
     setSelectedAnswers([]);
 
-    if(userProgress < questionList.length - 1) {
-        userProgress++;
-        setUserProgress(userProgress);
-    }
-    else setUserProgress(0);
+    setUserProgress(Math.round(Math.random()*csvIndex.length));
 
     options.forEach(el => {
         document.getElementById(el).style.fontWeight = "normal";
@@ -218,8 +218,8 @@ return (
                     </Typography>
 
                     <Box sx={{ textAlign: "center", my: 3 }}>
-                        <img
-                        src={questionList[userProgress ? userProgress : 0]}
+                        {imageLoaded ? <img
+                        src={imagesBaseUrl + csvIndex[userProgress ? userProgress : 1].split(",")[0]}
                         alt="Chest X-ray"
                         style={{
                             minWidth: "300px", maxWidth: "30%",
@@ -228,7 +228,14 @@ return (
                             border: "2px solid #ccc",
                         }}
                         onClick={handleClick}
-                        />
+                        /> : <Typography
+                            variant="caption"
+                            display="block"
+                            textAlign="center"
+                            sx={{ mt: 3, color: "gray" }}
+                            >
+                            Image Loading...
+                        </Typography>}
 
                         {/* Question ID */}
                         <Typography
@@ -237,7 +244,7 @@ return (
                             textAlign="center"
                             sx={{ mt: 3, color: "gray" }}
                             >
-                            Question ID: {questionList[userProgress].substring(questionList[userProgress].length - 36)}
+                            Question ID: {csvIndex[userProgress ? userProgress : 1].split(",")[0].split('.')[0]}
                         </Typography>
                     </Box>
 
@@ -314,7 +321,7 @@ return (
                   Chest X-Ray (Zoomed In)
                 </Typography> */}
                 <img
-                    src={questionList[userProgress ? userProgress : 0]}
+                    src={imagesBaseUrl + csvIndex[userProgress ? userProgress : 1].split(",")[0]}
                     alt="Chest X-ray Popover"
                     style={{
                         maxWidth: "100%",
