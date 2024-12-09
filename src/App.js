@@ -9,7 +9,7 @@ import QuizPage from "./pages/QuizPage";
 
 const App = () => {
   return (
-    <Router>
+    <Router basename={process.env.PUBLIC_URL}>
       <AuthProvider>
         <Routes>
           <Route
