@@ -109,13 +109,13 @@ const handleSubmit = async () => {
         document.getElementById(el).style.color = "grey";
     });
     actualAnswers.forEach(el => {
-        document.getElementById(el.replace("_", " ")).style.fontWeight = "bolder";
-        document.getElementById(el).style.color = "black";
+        document.getElementById(el.replace("Pleural_", "Pleural ")).style.fontWeight = "bolder";
+        document.getElementById(el.replace("Pleural_", "Pleural ")).style.color = "black";
     });
 
     selectedAnswers.forEach(selectedAnswer => {
         if(actualAnswers.some(actualAnswer => {
-            return actualAnswer === selectedAnswer.replace(" ", "_");
+            return actualAnswer === selectedAnswer.replace("Pleural ", "Pleural_");
         })) {
             numCorrect++;
         } else {
@@ -137,20 +137,47 @@ const handleSubmit = async () => {
 
     // update DB on new score
     const db = getDatabase();
-    const scoreRef = ref(db, `users/${userId}/score`);
+    const userRef = ref(db, `users/${userId}`);
 
-    onValue(scoreRef, (snapshot) => {
-        const firebaseScore = snapshot.val();
-        setUserScore(firebaseScore || 0); // Set score to 0 if not found
+    onValue(userRef, (snapshot) => {
+        const firebaseScore = snapshot.val().score || 0;
+        let firebaseOptionsStats = Object.assign(snapshot.val().stats || {});
 
-        const newScore = userScore+deltaScore;
+        // calculate new score and new stats
+        const newScore = firebaseScore+deltaScore;
         setUserScore(newScore);
-    
-        const db = getDatabase();
-        const userRef = ref(db, `users/${userId}`);
-    
-        // Update the user's score in Firebase
-        update(userRef, { score: newScore })
+        
+        options.forEach(option => {
+            const userSelectedOption = selectedAnswers.some(el => el === option);
+            const optionIsCorrect = actualAnswers.some(actualAnswer => {
+                return actualAnswer === option.replace("Pleural ", "Pleural_");
+            });
+            firebaseOptionsStats[option] = Object.assign(firebaseOptionsStats[option]) || {tp:0,fp:0,tn:0,fn:0};
+
+            // definitions: 
+            
+            // tp = user selected option, and option is correct
+            if(userSelectedOption && optionIsCorrect) {
+                firebaseOptionsStats[option].tp =  ++firebaseOptionsStats[option].tp;
+            } 
+            // fp = user selected option, and option is wrong
+            else if (userSelectedOption && !optionIsCorrect){
+                firebaseOptionsStats[option].fp =  ++firebaseOptionsStats[option].fp;
+            } 
+            // tn = user did not select option, and option is wrong
+            else if (!userSelectedOption && !optionIsCorrect){
+                firebaseOptionsStats[option].tn =  ++firebaseOptionsStats[option].tn;
+            } 
+            // fn = user did not select option, and option is correct
+            else if (!userSelectedOption && optionIsCorrect){
+                firebaseOptionsStats[option].fn =  ++firebaseOptionsStats[option].fn;
+            }
+            // console.log(option, userSelectedOption, optionIsCorrect, firebaseOptionsStats)
+        });
+        
+        // Update the user's score and stats in Firebase
+        // console.log('stats', firebaseOptionsStats)
+        update(userRef, { score: newScore, stats: firebaseOptionsStats })
             .then(() => {
                 console.log("Your answers have been submitted, and your score has been updated!");
                 // setUserScore(newScore); // Update local score state
@@ -159,11 +186,9 @@ const handleSubmit = async () => {
                 console.error("Error updating score:", error);
                 console.log("There was an error updating your score. Please try again.");
             });
-    });
+    }, { onlyOnce: true });
 
-    
-
-      setSubmitted(true);
+    setSubmitted(true);
 };
 
 const handleNext = () => {
