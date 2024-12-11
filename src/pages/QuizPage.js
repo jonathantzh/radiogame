@@ -152,7 +152,7 @@ const handleSubmit = async () => {
             const optionIsCorrect = actualAnswers.some(actualAnswer => {
                 return actualAnswer === option.replace("Pleural ", "Pleural_");
             });
-            firebaseOptionsStats[option] = Object.assign(firebaseOptionsStats[option]) || {tp:0,fp:0,tn:0,fn:0};
+            firebaseOptionsStats[option] = firebaseOptionsStats[option] || {tp:0,fp:0,tn:0,fn:0};
 
             // definitions: 
             
